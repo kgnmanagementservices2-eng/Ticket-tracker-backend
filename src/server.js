@@ -125,8 +125,15 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/groups", require("./routes/groupRoutes"));
 app.use("/api/categories", require("./routes/categoryRoutes"));
 
+
 // Error Handler
 app.use(errorHandler);
 
-// Export for Vercel
+// --- ADD THIS CODE TO START THE SERVER ---
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, "0.0.0.0", () => {
+  console.log(`🚀 Server and WebSockets running on port ${PORT}`);
+});
+
+// Export for Vercel (optional, keep it if you need it)
 module.exports = app;
