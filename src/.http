@@ -1,0 +1,18 @@
+POST http://localhost:5000/api/auth/register
+Content-Type: application/json
+
+{
+  "companyName": "TechRetail Corp",
+  "ceoName": "Alice Smith",
+  "email": "alice@techretail.com",
+  "password": "SecurePassword123!"
+}
+
+
+# {
+#   "status": "success",
+#   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJlMmIyMzllZS1mOTc0LTQ5M2ItYmY1MC0zMzgyNjg0MjY2YTIiLCJ0ZW5hbnRfaWQiOiI2NTJlOThjMy0wMmQ0LTQwYmYtOWZmNC00MTE3N2YxOTlkYmUiLCJyb2xlIjoiQ0VPIiwiaWF0IjoxNzczMzk2NDQ4LCJleHAiOjE3NzM0ODI4NDh9.Iw4ruE7-dkRkPSfRaYOcYMqHX-O2ZLvlVo7qKp5_-NY",
+#   "message": "Company registered successfully"
+# }
+
+
