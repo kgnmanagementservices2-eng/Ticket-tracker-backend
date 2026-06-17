@@ -5,14 +5,13 @@ const cors = require("cors");
 const helmet = require("helmet");
 const cookieParser = require("cookie-parser");
 
-// Twilio (WebRTC + Tokens)
+// Twilio
 const { twiml, jwt } = require("twilio");
 const VoiceResponse = twiml.VoiceResponse;
 const AccessToken = jwt.AccessToken;
 const VoiceGrant = AccessToken.VoiceGrant;
 
 // Local Imports
-const db = require("./config/db");
 const errorHandler = require("./middlewares/errorHandler");
 const authRoutes = require("./routes/authRoutes");
 const adminRoutes = require("./routes/adminRoutes");
@@ -22,45 +21,54 @@ const notificationRoutes = require("./routes/notificationRoutes");
 const { initializeSocket } = require("./config/socket");
 
 const app = express();
-const server = http.createServer(app);
 
-// ✅ Initialize Socket.IO
+// Socket.IO
+const server = http.createServer(app);
 initializeSocket(server);
 
-// 🔒 Security
+// Security
 app.use(helmet());
 
-// ✅ ✅ FIXED: SINGLE CORS CONFIG (VERY IMPORTANT)
+// CORS
+const allowedOrigins = ["http://localhost:5173", process.env.FRONTEND_URL];
+
 app.use(
   cors({
-    origin: "http://localhost:5173", // frontend URL
-    credentials: true, // 🔥 REQUIRED for cookies
+    origin(origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
   }),
 );
 
-// ✅ Body Parsers
+// Parsers
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-
-// ✅ Cookie Parser (MUST come before routes)
 app.use(cookieParser());
 
-// ✅ Health Check
+// Health Check
 app.get("/api/health", (req, res) => {
   res.status(200).json({
+    success: true,
     status: "OK",
     message: "SaaS Ticketing Server is running",
+    timestamp: new Date().toISOString(),
   });
 });
 
 // ================= TWILIO =================
 
-// 🎟️ Generate Access Token
 app.post("/api/token", (req, res) => {
-  const identity = req.body.identity;
+  const { identity } = req.body;
 
   if (!identity) {
-    return res.status(400).send("Identity is required");
+    return res.status(400).json({
+      success: false,
+      message: "Identity is required",
+    });
   }
 
   try {
@@ -79,19 +87,23 @@ app.post("/api/token", (req, res) => {
     token.addGrant(voiceGrant);
 
     res.json({
+      success: true,
       token: token.toJwt(),
       identity,
     });
   } catch (err) {
-    console.error("❌ Twilio Token Error:", err.message);
-    res.status(500).json({ error: "Failed to generate token" });
+    console.error("❌ Twilio Token Error:", err);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to generate token",
+    });
   }
 });
 
-// 📞 Voice Webhook
 app.post("/api/voice", (req, res) => {
   const response = new VoiceResponse();
-  const to = req.body.To;
+  const { To: to } = req.body;
 
   if (to) {
     const dial = response.dial();
@@ -104,8 +116,7 @@ app.post("/api/voice", (req, res) => {
   res.send(response.toString());
 });
 
-// ================= ROUTES =================
-
+// Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/tickets", ticketRoutes);
@@ -114,14 +125,8 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/groups", require("./routes/groupRoutes"));
 app.use("/api/categories", require("./routes/categoryRoutes"));
 
-// ================= ERROR HANDLER =================
-
+// Error Handler
 app.use(errorHandler);
 
-// ================= SERVER START =================
-
-const PORT = process.env.PORT || 5000;
-
-server.listen(PORT, "0.0.0.0", () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+// Export for Vercel
+module.exports = app;
